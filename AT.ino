@@ -7,6 +7,8 @@ extern "C" {
 
 String incoming = "";   
 
+//test comment by GCL -- just making sure I have github configured correctly
+
 void setup() {
         Serial.begin(115200);     
 
