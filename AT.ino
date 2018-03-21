@@ -1,3 +1,5 @@
+#include <ESP8266HTTPClient.h>
+
 #ifdef ESP8266
 extern "C" {
 #include "user_interface.h"
@@ -6,7 +8,7 @@ extern "C" {
 #include <ESP8266WiFi.h>
 
 String incoming = "";   
-
+ HTTPClient http;
 //test comment by GCL -- just making sure I have github configured correctly
 
 void setup() {
@@ -18,10 +20,10 @@ void loop() {
         if (Serial.available() > 0) {
                 incoming = Serial.readStringUntil('\n');
                 if (incoming == "AT\r") //Attention
-                  Serial.println("OK\r\n");
+                  Serial.println("\r\nOK\r\n");
                 else if (incoming == "AT+RST\r") // Reset
                 {
-                  Serial.println("OK\r\n");
+                  Serial.println("\r\nOK\r\n");
                 }
                 else if (incoming.substring(0,8) == "AT+CWJAP") //Join Network
                 {
@@ -40,7 +42,22 @@ void loop() {
                   while(WiFi.status() != WL_CONNECTED){
                     delay(100);
                   }
-                  Serial.println("OK\r\n");
+                  Serial.println("\r\nOK\r\n");
+                }
+                else if (incoming.substring(0,11) == "AT+CIPSTART")
+                {
+                  String type = getValue(incoming,'\"',1);
+                  String addr = getValue(incoming,'\"',2);
+                  String port = getValue(incoming,'\"',3);
+                  http.begin("http://"+addr); 
+                  Serial.println("\r\nOK\r\n");
+                }
+                  else if (incoming.substring(0,12) == "AT+CIPSTATUS")
+                {
+                  
+                  Serial.print("Status:3\r\n");
+                  Serial.print("+CIPSTATUS:0,\"TCP\",");
+                  Serial.print("google.com\",80,0\r\nOK\r\n");
                 }
                   
         }   
