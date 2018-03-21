@@ -15,13 +15,13 @@ void setup() {
 void loop() {
         if (Serial.available() > 0) {
                 incoming = Serial.readStringUntil('\n');
-                if (incoming == "AT\r")
-                  Serial.println("OK");
-                else if (incoming == "AT+RST\r")
+                if (incoming == "AT\r") //Attention
+                  Serial.println("OK\r\n");
+                else if (incoming == "AT+RST\r") // Reset
                 {
-                  Serial.println("OK");
+                  Serial.println("OK\r\n");
                 }
-                else if (incoming.substring(0,8) == "AT+CWJAP")
+                else if (incoming.substring(0,8) == "AT+CWJAP") //Join Network
                 {
                   String ssid = getValue(incoming,'\"',1);
                   int ssidL = ssid.length() + 1;
@@ -38,7 +38,7 @@ void loop() {
                   while(WiFi.status() != WL_CONNECTED){
                     delay(100);
                   }
-                  Serial.println("WIFI CONNECTED");
+                  Serial.println("OK\r\n");
                 }
                   
         }   
