@@ -8,7 +8,7 @@ extern "C" {
 #include <ESP8266WiFi.h>
 
 String incoming = "";   
- HTTPClient http;
+HTTPClient http;
 //test comment by GCL -- just making sure I have github configured correctly
 
 void setup() {
@@ -27,12 +27,12 @@ void loop() {
                 }
                 else if (incoming.substring(0,8) == "AT+CWJAP") //Join Network
                 {
-                  String ssid = getValue(incoming,'\"',1);
+                  String ssid = split(incoming,'\"',1);
                   int ssidL = ssid.length() + 1;
                   char ssidArray[ssidL];
                   ssid.toCharArray(ssidArray, ssidL);
                   
-                  String password = getValue(incoming,'\"',3);
+                  String password = split(incoming,'\"',3);
                   int passwordL = password.length() + 1;
                   char passwordArray[passwordL];
                   password.toCharArray(passwordArray, passwordL);
@@ -46,9 +46,9 @@ void loop() {
                 }
                 else if (incoming.substring(0,11) == "AT+CIPSTART")
                 {
-                  String type = getValue(incoming,'\"',1);
-                  String addr = getValue(incoming,'\"',2);
-                  String port = getValue(incoming,'\"',3);
+                  String type = split(incoming,'\"',1);
+                  String addr = split(incoming,'\"',2);
+                  String port = split(incoming,'\"',3);
                   http.begin("http://"+addr); 
                   Serial.println("\r\nOK\r\n");
                 }
@@ -59,11 +59,33 @@ void loop() {
                   Serial.print("+CIPSTATUS:0,\"TCP\",");
                   Serial.print("google.com\",80,0\r\nOK\r\n");
                 }
-                  
+                 else if(incoming.substring(0,10) == "AT+CIPSEND")
+                 {
+                    int len = split(incoming,'=',1).toInt();
+                    char content [len+1];
+                    Serial.setTimeout(5000);
+                    Serial.readBytes(content,len);
+                    
+                    String type = split(content,' ',0);
+                    String addr = split(content,' ',1);
+                    String httpType = split(content,' ',2);
+                    String host = split(content,' ',4);
+                    
+                    String address = "http://"+host+addr;
+
+                      http.begin(address);
+                      int httpCode = http.GET();
+                      if(httpCode > 0) {
+                      if(httpCode == HTTP_CODE_OK) {
+                         String payload = http.getString();
+                         Serial.println(payload);
+                      }
+                     }
+                     }
         }   
 }
 
-String getValue(String data, char separator, int index)
+String split(String data, char separator, int index)
 {
     int found = 0;
     int strIndex[] = { 0, -1 };
