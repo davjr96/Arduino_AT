@@ -1,21 +1,18 @@
-#
-include < ESP8266WiFi.h >
+#include <ESP8266WiFi.h>
 
-  #ifdef ESP8266
-extern "C" {#
-  include "user_interface.h"
-}#
-endif
+#ifdef ESP8266
+extern "C" {
+  #include "user_interface.h"
+}
+#endif
 
 String incoming = "";
 bool requestSent = false;
 bool sendMode = false;
 WiFiClient client;
-//test comment by GCL -- just making sure I have github configured correctly
 
 void setup() {
   Serial.begin(115200);
-
 }
 
 void loop() {
@@ -34,10 +31,10 @@ void loop() {
     }
     incoming = Serial.readStringUntil('\n');
     if (incoming == "AT\r") //Attention
-      Serial.println("\r\nOK\r\n");
+      Serial.print("\r\nOK\r\n");
     else if (incoming == "AT+RST\r") // Reset
     {
-      Serial.println("\r\nOK\r\n");
+      Serial.print("\r\nOK\r\n");
     } else if (incoming.substring(0, 8) == "AT+CWJAP") //Join Network
     {
       String ssid = split(incoming, '\"', 1);
@@ -55,7 +52,7 @@ void loop() {
       while (WiFi.status() != WL_CONNECTED) {
         delay(100);
       }
-      Serial.println("\r\nOK\r\n");
+      Serial.print("\r\nOK\r\n");
     } else if (incoming.substring(0, 11) == "AT+CIPSTART") {
       requestSent = false;
       String addr = split(incoming, '\"', 3);
