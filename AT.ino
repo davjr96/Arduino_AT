@@ -107,7 +107,11 @@ void loop()
       //+CIFSR:STAIP,"192.168.0.11"
       //+CIFSR:STAMAC,"dc:4f:22:26:7e:ed"
       {
-        Serial.print("\r\nOK\r\n");
+        Serial.print("\r\n+CIFSR:STAIP,\"");
+        Serial.print(WiFi.localIP());
+        Serial.print("\"\r\n\r\n+CIFSR:STAMAC,\"");
+        Serial.print(WiFi.macAddress());
+        Serial.print("\"\r\n");
       } 
   
       else if (incoming.substring(0, 9) == "AT+CWJAP?") //TODO: handle CWJAP? request
