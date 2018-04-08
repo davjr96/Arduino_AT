@@ -17,7 +17,7 @@ void setup() {
 
 void loop() {
   while (client.available() && requestSent) {
-    String line = client.readStringUntil('\r');
+    String line = client.readStringUntil('\r');   //I think we want \n here
     Serial.print(line);
   }
   if (Serial.available() > 0) {
@@ -35,7 +35,39 @@ void loop() {
     else if (incoming == "AT+RST\r") // Reset
     {
       Serial.print("\r\nOK\r\n");
-    } else if (incoming.substring(0, 8) == "AT+CWJAP") //Join Network
+    } 
+    else if (incoming == "ATE0\r") // echo off
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+    else if (incoming == "ATE1\r") // echo on
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+    else if (incoming == "AT+CWMODE?\r") // checking wifi mode
+    {
+      Serial.print("\r\n+CWMODE_CUR:1\r\n\r\nOK\r\n"); //always return station mode
+    } 
+    else if (incoming.startsWith("AT+CWMODE=")) // setting wifi mode, ignore (always station)
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+    else if (incoming.startsWith("AT+CIPMUX")) // setting the mux, ignore
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+    else if (incoming.startsWith("AT+CIPMODE")) // setting transparent mode, ignore
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+    else if (incoming == "AT+CIPSTAMAC?")) // getting MAC address, TODO: return MAC address
+    {
+      Serial.print("\r\nOK\r\n");
+    } 
+
+    else if (incoming.substring(0, 9) == "AT+CWJAP?") //TODO: handle CWJAP request
+    {}
+    else if (incoming.substring(0, 9) == "AT+CWJAP=") //Join Network
     {
       String ssid = split(incoming, '\"', 1);
       int ssidL = ssid.length() + 1;
@@ -63,10 +95,13 @@ void loop() {
         Serial.print("\r\nOK\r\n");
       }
     } else if (incoming.substring(0, 12) == "AT+CIPSTATUS") {
-
-      Serial.print("Status:3\r\n");
-      Serial.print("+CIPSTATUS:0,\"TCP\",");
-      Serial.print("google.com\",80,0\r\nOK\r\n");
+      Serial.print(WiFi.status());
+      Serial.print(';');
+      Serial.print(client.status());
+      
+//      Serial.print("Status:3\r\n");
+//      Serial.print("+CIPSTATUS:0,\"TCP\",");
+//      Serial.print("google.com\",80,0\r\nOK\r\n");
     } else if (incoming.substring(0, 10) == "AT+CIPSEND") {
       sendMode = true;
 
