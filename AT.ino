@@ -179,6 +179,10 @@ void loop()
         client.stop();
         Serial.print("\r\n\r\nOK\r\n");
       }
+      else
+      {
+        Serial.println("\r\nERROR\r\n");
+      }
       incoming = "";
     }
   }
