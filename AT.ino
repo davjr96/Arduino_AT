@@ -11,7 +11,8 @@ bool requestSent = false;
 bool sendMode = false;
 WiFiClient client;
 
-void setup() {
+void setup() 
+{
   Serial.begin(115200);
 }
 
@@ -19,7 +20,7 @@ String clientStr = "";
 
 void loop() 
 {
-  if(client.available())
+  while(client.available())
   {
     char ch = client.read();
     clientStr += ch;
@@ -30,14 +31,14 @@ void loop()
     }
   }
   
-  if (Serial.available() > 0) 
+  while(Serial.available()) 
   {
+    char ch = Serial.read();
+    //Serial.print(ch); //echo if you need debugging...
+    incoming += ch;
+        
     if(sendMode) 
     {
-      //incoming = Serial.readStringUntil('+'); //can't use this here -- we need to send lines as they arrive
-      char ch = Serial.read();
-      //Serial.print(ch); //echo if you need debugging...
-      incoming += ch;
       if(ch == '\n')
       {
         client.print(incoming);
@@ -45,30 +46,30 @@ void loop()
       }
       if(incoming == "+++") //these should be in a packet by themselves
       {
-        requestSent = true;
+        //requestSent = true;
         sendMode = false;
         incoming = "";    
       }
     }
 
-    else
-      {
-      incoming = Serial.readStringUntil('\n');
-      if (incoming == "AT\r") //Attention
+    else if(ch == '\n')
+    {
+      if (incoming == "AT\r\n") //Attention
         Serial.print("\r\nOK\r\n");
-      else if (incoming == "AT+RST\r") // Reset
-      {
-        Serial.print("\r\nOK\r\n");
-      } 
-      else if (incoming == "ATE0\r") // echo off, ignore
+      else if (incoming == "AT+RST\r\n") // Reset
       {
         Serial.print("\r\nOK\r\n");
       } 
-      else if (incoming == "ATE1\r") // echo on, ignore [TODO: echo back commands]
+      else if (incoming == "ATE0\r\n") // echo off, ignore
+      {
+        Serial.print("\r\nOK\r\n");
+      }
+         
+      else if (incoming == "ATE1\r\n") // echo on, ignore [TODO: echo back commands]
       {
         Serial.print("\r\nOK\r\n");
       } 
-      else if (incoming == "AT+CWMODE?\r") // checking wifi mode
+      else if (incoming == "AT+CWMODE?\r\n") // checking wifi mode
       {
         Serial.print("\r\n+CWMODE:1\r\n\r\nOK\r\n"); //always return station mode
       } 
@@ -84,11 +85,12 @@ void loop()
       {
         Serial.print("\r\nOK\r\n");
       } 
-      else if (incoming == "AT+CIPSTAMAC?\r") // getting MAC address, TODO: return MAC address
+      else if (incoming == "AT+CIPSTAMAC?\r\n") // getting MAC address, TODO: return MAC address
       {
         Serial.print("\r\nOK\r\n");
       } 
-      else if (incoming == "AT+CIFSR\r") // getting IP and MAC address, TODO: return IP and MAC address
+      
+      else if (incoming == "AT+CIFSR\r\n") //get IP and MAC address
       //sample:
       //+CIFSR:STAIP,"192.168.0.11"
       //+CIFSR:STAMAC,"dc:4f:22:26:7e:ed"
@@ -100,10 +102,15 @@ void loop()
         Serial.print("\"\r\n");
       } 
   
-      else if (incoming.substring(0, 9) == "AT+CWJAP?") //TODO: handle CWJAP? request
+      else if (incoming.substring(0, 9) == "AT+CWJAP?") //check if connected
       //sample:  
       //+CWJAP:"MOTOROLA-4A7AC","00:26:82:ce:7a:02",1,-61\r\n
-      {}
+      {
+        Serial.print("+CWJAP:\"wahoo\",\"");
+        Serial.print(WiFi.macAddress());
+        Serial.print("\",1,-57\r\n\r\nOK\r\n"); //we'll make up an RSSI value...no one will notice
+      }
+      
       else if (incoming.substring(0, 9) == "AT+CWJAP=") //Join Network
       {
         String ssid = split(incoming, '\"', 1);
@@ -179,6 +186,7 @@ void loop()
       {
         Serial.println("\r\nERROR\r\n");
       }
+      
       incoming = "";
     }
   }
