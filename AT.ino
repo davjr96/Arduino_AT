@@ -15,46 +15,32 @@ void setup() {
   Serial.begin(115200);
 }
 
+String clientStr = "";
+
 void loop() 
 {
-//  while (client.available() && requestSent) //this all needs a timeout, and better handling of line endings
-//  {
-//    String line = client.readStringUntil('\r');
-//    Serial.println(line);
-//  }
-
-  if(requestSent)
+  if(client.available())
   {
-    String line = "";
-    uint32_t lastRead = millis();
-    
-    while(millis() - lastRead < 2000ul)  //2 second timeout 
+    char ch = client.read();
+    clientStr += ch;
+    if(ch == '\n')
     {
-      if(client.available())
-      {
-        char ch = client.read();
-        line += ch;
-        if(ch == '\n')
-        {
-          Serial.print(line);
-          line = "";
-        }
-        lastRead = millis();
-      }
+      Serial.print(clientStr);
+      clientStr = "";
     }
   }
   
   if (Serial.available() > 0) 
   {
-    if (sendMode) 
+    if(sendMode) 
     {
       //incoming = Serial.readStringUntil('+'); //can't use this here -- we need to send lines as they arrive
       char ch = Serial.read();
+      //Serial.print(ch); //echo if you need debugging...
       incoming += ch;
       if(ch == '\n')
       {
         client.print(incoming);
-        //Serial.println(incoming); //are we just echoing back here?
         incoming = "";
       }
       if(incoming == "+++") //these should be in a packet by themselves
@@ -131,12 +117,22 @@ void loop()
         password.toCharArray(passwordArray, passwordL);
   
         WiFi.begin(ssidArray, passwordArray);
-  
-        while (WiFi.status() != WL_CONNECTED) {
+
+        uint32_t lastCheck = millis();
+        while(millis() - lastCheck < 5000ul)  //5 second timeout 
+        {
+          if(WiFi.status() == WL_CONNECTED) break;
           delay(100);
         }
-        Serial.print("\r\nOK\r\n");
-      } else if (incoming.substring(0, 11) == "AT+CIPSTART") {
+
+        if(WiFi.status() == WL_CONNECTED) 
+        {
+          Serial.print("\r\nOK\r\n");        
+        }
+        else Serial.print("\r\nERROR\r\n");        
+      } 
+      else if (incoming.substring(0, 11) == "AT+CIPSTART") 
+      {
         requestSent = false;
         String addr = split(incoming, '\"', 3);
         if (!client.connect(addr, 80)) {
