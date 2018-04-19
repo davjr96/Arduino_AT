@@ -26,17 +26,7 @@ void loop()
     clientStr += ch;
     if(ch == '\n')
     {
-      if(clientStr.startsWith("<setp")) //intercept setpoint
-      {
-        int bracket = clientStr.indexOf('>');
-        int comma = clientStr.indexOf(',');
-        if(comma == bracket + 3)
-        {
-          clientStr[bracket + 1] = '1';
-          clientStr[bracket + 2] = '2';
-        }
-      }
-      
+      clientStr = InterceptSetPoint(clientStr, 0, -4);      
       Serial.print(clientStr);
       clientStr = "";
     }
@@ -52,18 +42,14 @@ void loop()
     {
       if(ch == '\n')
       {
-        if(incoming.indexOf("id=190") > 0) //alter data sent to DB
+        if(incoming.indexOf("GET") >= 0) 
         {
-          int valStr = incoming.indexOf("value=");
-          if(valStr > 0) 
-          {
-            incoming[valStr + 6] = '7';
-            incoming[valStr + 7] = '8';
-          }
+          incoming = InterceptReading(incoming, 190, -5);
         }
         client.print(incoming);
         incoming = "";
       }
+      
       if(incoming == "+++") //these should be in a packet by themselves
       {
         //requestSent = true;
@@ -229,3 +215,60 @@ String split(String data, char separator, int index) {
   }
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
+
+String InterceptReading(const String& str, int id, float adj)
+/*
+ * Takes an attempt to write to the database and adjusts it.
+ */
+{
+  String idStr = String("id=") + String(id);
+  
+  int iID = str.indexOf(idStr);
+  if(iID == -1) return str; //not found, return the original string
+
+  int iVal = str.indexOf("value=");
+  if(iVal == -1) return str;
+  
+  String rest = str.substring(iVal + 6); //safe because at worst it's '\0'
+
+  float val = rest.toFloat(); //original value
+  int iAmp = rest.indexOf('&'); //look for any following parameters
+
+  String hacked = str.substring(0, iVal) + String("value=") + String(val + adj);
+  if(iAmp > 0) hacked += rest.substring(iAmp);
+
+  return hacked;
+}
+
+String InterceptSetPoint(const String& str, int index, float adj) //index is 0 or 1 for heating, cooling
+{
+  index = constrain(index, 0, 1);
+  
+  if(str.startsWith("<setp")) //intercept setpoint
+  {
+    int sp[2];
+
+    int bracket = clientStr.indexOf('>');
+    if(bracket == -1) return str; //not found, return original string
+    sp[0] = str.substring(bracket + 1).toInt();
+    
+    int comma = clientStr.indexOf(',');
+    if(comma == -1) return str; //not found, return original string
+    sp[1] = str.substring(comma + 1).toInt();
+
+    int end_bracket = str.indexOf("</setp");
+    if(end_bracket == -1) return str;
+    String endStr = str.substring(end_bracket);
+
+    //now adjust
+    sp[index] += adj;
+
+    String brStr = str.substring(0, bracket + 1);
+    String retStr = brStr + String(sp[0]) + String(',') + String(sp[1]) + endStr;
+
+    return retStr;
+  }
+  
+  else return str;
+}
+
