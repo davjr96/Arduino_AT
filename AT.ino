@@ -44,7 +44,7 @@ void loop()
       {
         if(incoming.indexOf("GET") >= 0) 
         {
-          incoming = InterceptReading(incoming, 190, -5);
+          incoming = InterceptReading(incoming, 190, 4);
         }
         client.print(incoming);
         incoming = "";
@@ -240,10 +240,8 @@ String InterceptReading(const String& str, int id, float adj)
   return hacked;
 }
 
-String InterceptSetPoint(const String& str, int index, float adj) //index is 0 or 1 for heating, cooling
+String InterceptSetPoint(const String& str, float adj0, float adj1) //adjust the two setpoints
 {
-  index = constrain(index, 0, 1);
-  
   if(str.startsWith("<setp")) //intercept setpoint
   {
     int sp[2];
@@ -261,7 +259,8 @@ String InterceptSetPoint(const String& str, int index, float adj) //index is 0 o
     String endStr = str.substring(end_bracket);
 
     //now adjust
-    sp[index] += adj;
+    sp[0] += adj0;
+    sp[1] += adj1;
 
     String brStr = str.substring(0, bracket + 1);
     String retStr = brStr + String(sp[0]) + String(',') + String(sp[1]) + endStr;
