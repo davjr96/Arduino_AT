@@ -10,16 +10,21 @@ String incoming = "";
 bool requestSent = false;
 bool sendMode = false;
 WiFiClient client;
+WiFiServer server(80);
 
 void setup() 
 {
   Serial.begin(115200);
+  delay(100);
+  server.begin();
 }
 
 String clientStr = "";
 
 void loop() 
 {
+  CheckServer();
+    
   while(client.available())
   {
     char ch = client.read();
@@ -216,6 +221,20 @@ String split(String data, char separator, int index) {
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
+int SendIP(void)
+{
+  char destServer[] = "ec2-34-209-142-24.us-west-2.compute.amazonaws.com";
+  WiFiClient ipClient;
+  ipClient.connect(destServer, 80);
+  ipClient.print("GET /~gcl8a/ip_hoest.php?ip=");
+  ipClient.print(WiFi.localIP());
+  ipClient.print(" HTTP/1.1\r\nHost: "); //the beginning of the "footer"
+  ipClient.print(destServer); //this tells the interwebs to route your request through the AWS server
+  ipClient.print("\r\nConnection: close\r\n\r\n"); //tell the server to close the cxn when done.
+
+  return 1;
+}
+
 String InterceptReading(const String& str, int id, float adj)
 /*
  * Takes an attempt to write to the database and adjusts it.
@@ -269,5 +288,23 @@ String InterceptSetPoint(const String& str, float adj0, float adj1) //adjust the
   }
   
   else return str;
+}
+
+void CheckServer(void)
+{
+  WiFiClient remoteClient = server.available();
+  if(remoteClient) 
+  {
+    // Wait until the client sends some data
+    Serial.println("new client");
+    String str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nHi\r\n";
+    str += "</html>\r\n";
+    
+    remoteClient.print(str);
+//    while(!client.available())
+//    {
+//      delay(1);
+//    }
+  }
 }
 
